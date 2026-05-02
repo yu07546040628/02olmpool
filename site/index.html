@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OlmPool — 26 Controlled LLM Models Revealing How Architecture Impacts Long Context</title>
+  <meta name="description" content="OlmPool is Allen AI's suite of 26 comparable 7B models showing how minor architectural choices—QK norm, GQA, sliding window attention, and pretraining context length—compound to reduce long-context performance by up to 47%." />
+  <meta name="keywords" content="OlmPool, Allen AI, long context LLM, QK normalization, GQA, sliding window attention, HELMET benchmark, Cracks in the Foundation" />
+  <meta name="author" content="olmpool.com" />
+  <link rel="canonical" href="https://olmpool.com/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="OlmPool — How Architecture Choices Impact Long Context in LLMs" />
+  <meta property="og:description" content="26 controlled 7B models from Allen AI revealing that combining 3+ minor architectural choices can drop long-context performance by up to 47%." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://olmpool.com/" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "name": "Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension",
+    "author": [
+      {"@type": "Person", "name": "Amanda Bertsch"},
+      {"@type": "Person", "name": "Luca Soldaini"},
+      {"@type": "Person", "name": "Matthew R. Gormley"},
+      {"@type": "Person", "name": "Graham Neubig"},
+      {"@type": "Person", "name": "Hannaneh Hajishirzi"},
+      {"@type": "Person", "name": "Kyle Lo"},
+      {"@type": "Person", "name": "Dirk Groeneveld"}
+    ],
+    "publisher": {"@type": "Organization", "name": "Allen Institute for AI"},
+    "url": "https://allenai.org/papers/olmpool",
+    "description": "A controlled study of 26 comparable 7B LLMs showing how normalization, GQA, sliding window attention, and pretraining context length compound to reduce long-context extensibility."
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER / NAV
+═══════════════════════════════════════════ -->
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="logo">OlmPool<span class="logo-dot">.com</span></a>
+    <nav class="site-nav">
+      <a href="#video">Video</a>
+      <a href="#findings">Findings</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#models">Models</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="#community">Community</a>
+      <a href="https://huggingface.co/collections/allenai/olmpool" target="_blank" rel="noopener" class="nav-cta">HuggingFace ↗</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Allen Institute for AI · April 2026
+    </div>
+    <h1 class="hero-title">
+      OlmPool: How Minor Architecture Choices<br>
+      <span class="hero-accent">Crack Long-Context Performance</span>
+    </h1>
+    <p class="hero-subtitle">
+      A controlled suite of <strong>26 comparable 7B models</strong> trained with 170,000 H100 hours,
+      showing that combining just 3 architectural choices can drop long-context performance by
+      <strong>up to 47%</strong> — and standard benchmarks won't warn you.
+    </p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num">26</span>
+        <span class="stat-label">Controlled Models</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num">170K</span>
+        <span class="stat-label">H100 GPU Hours</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num">47%</span>
+        <span class="stat-label">Max Performance Drop</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num">38</span>
+        <span class="stat-label">Checkpoints / Model</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <a href="https://huggingface.co/collections/allenai/olmpool" target="_blank" rel="noopener" class="btn btn-primary">Browse Models on HuggingFace</a>
+      <a href="https://allenai.org/papers/olmpool" target="_blank" rel="noopener" class="btn btn-secondary">Read the Paper</a>
+    </div>
+    <p class="hero-paper">
+      <em>"Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension"</em><br>
+      Bertsch, Soldaini, Gormley, Neubig, Hajishirzi, Lo, Groeneveld · Allen Institute for AI / CMU
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     WHY IT MATTERS
+═══════════════════════════════════════════ -->
+<section class="section section-alt" id="why">
+  <div class="container">
+    <h2 class="section-title">Why OlmPool Matters</h2>
+    <p class="section-lead">
+      Most LLMs are pretrained on short text, then extended to handle long contexts via a midtraining phase.
+      But the base architecture is locked in before anyone tests long-context behavior.
+      OlmPool is the first large-scale controlled study to isolate exactly which architectural decisions make that extension succeed or fail.
+    </p>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">🔬</div>
+        <h3>Controlled Ablations</h3>
+        <p>Data, tokenizer, and extension recipe are held constant. Only the architecture varies — making causal attribution possible for the first time.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚠️</div>
+        <h3>Short-Context Metrics Fail</h3>
+        <p>Training loss, perplexity, and 16 standard benchmarks all fail to predict long-context performance. You can't see the problem coming.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏗️</div>
+        <h3>Architecture Is the Culprit</h3>
+        <p>Llama 3's long-context strength is architectural, not data-driven. The same extension recipe applied to OLMo 3 or Qwen 3 performs significantly worse.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h3>Fully Open Release</h3>
+        <p>All 26 models with 38 checkpoints each are released on HuggingFace, amortizing the 170,000 H100-hour training cost across the research community.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     VIDEO
+═══════════════════════════════════════════ -->
+<section class="section section-alt" id="video">
+  <div class="container">
+    <h2 class="section-title">Video Explainer</h2>
+    <p class="section-lead">
+      Vinh Nguyen's 41-minute deep-dive podcast walkthrough of the OlmPool paper — covering the key findings, methodology, and implications for LLM architecture design.
+    </p>
+    <div class="video-layout">
+      <div class="video-embed-wrap">
+        <div class="video-embed">
+          <iframe
+            src="https://www.youtube.com/embed/I9p9QKb_x3w"
+            title="OlmPool Paper Walkthrough — Vinh Nguyen"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            loading="lazy">
+          </iframe>
+        </div>
+      </div>
+      <div class="video-meta">
+        <div class="video-tag">📺 Paper Walkthrough</div>
+        <h3>Cracks in the Foundation — OlmPool Deep Dive</h3>
+        <p>A thorough walkthrough of the paper's methodology, the four architectural choices, and what the results mean for practitioners building long-context LLMs.</p>
+        <ul class="video-topics">
+          <li>Why short-context metrics fail to predict long-context performance</li>
+          <li>How QK norm suppresses attention sinks</li>
+          <li>The SWA + GQA interaction effect</li>
+          <li>What Llama 3's architecture gets right</li>
+          <li>Practical implications for model architecture decisions</li>
+        </ul>
+        <a href="https://www.youtube.com/watch?v=I9p9QKb_x3w" target="_blank" rel="noopener" class="btn btn-secondary">Watch on YouTube ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     KEY FINDINGS
+═══════════════════════════════════════════ -->
+<section class="section" id="findings">
+  <div class="container">
+    <h2 class="section-title">Key Research Findings</h2>
+
+    <div class="findings-grid">
+
+      <div class="finding-card finding-card--major">
+        <div class="finding-number">01</div>
+        <h3>Short-Context Metrics Cannot Predict Long-Context Performance</h3>
+        <p>
+          HELMET 32K scores range from <strong>29.9 to 56.4</strong> across OlmPool models — a 26.5-point spread.
+          Yet standard pretraining metrics show almost no correlation with this outcome:
+        </p>
+        <div class="metric-table">
+          <div class="metric-row">
+            <span class="metric-name">Training loss (pretraining)</span>
+            <span class="metric-r2">R² = 0.29</span>
+            <span class="metric-bar"><span style="width:29%"></span></span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Training loss (context extension)</span>
+            <span class="metric-r2">R² = 0.06</span>
+            <span class="metric-bar"><span style="width:6%"></span></span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">16 downstream BPB benchmarks</span>
+            <span class="metric-r2">R² = 0.17</span>
+            <span class="metric-bar"><span style="width:17%"></span></span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">HELMET 8K (pre-extension)</span>
+            <span class="metric-r2">R² = 0.32</span>
+            <span class="metric-bar"><span style="width:32%"></span></span>
+          </div>
+          <div class="metric-row metric-row--best">
+            <span class="metric-name">Feature count (# bad choices)</span>
+            <span class="metric-r2">R² = 0.67</span>
+            <span class="metric-bar"><span style="width:67%"></span></span>
+          </div>
+        </div>
+        <p class="finding-note">The single best predictor is simply counting how many of the four harmful architectural choices are present.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="finding-number">02</div>
+        <h3>Effects Compound — Up to 47% Drop</h3>
+        <p>Each feature alone causes modest degradation. Combined, they are catastrophic:</p>
+        <div class="compound-viz">
+          <div class="compound-row">
+            <span class="compound-label">Pretraining ctx 4K vs 8K</span>
+            <span class="compound-delta delta-small">−1 to −2 pts</span>
+          </div>
+          <div class="compound-row">
+            <span class="compound-label">SWA alone</span>
+            <span class="compound-delta delta-small">−1.1 pts</span>
+          </div>
+          <div class="compound-row">
+            <span class="compound-label">QK Norm (OLMo arch)</span>
+            <span class="compound-delta delta-medium">−6 pts</span>
+          </div>
+          <div class="compound-row">
+            <span class="compound-label">SWA + GQA combined</span>
+            <span class="compound-delta delta-large">−9 pts avg</span>
+          </div>
+          <div class="compound-row">
+            <span class="compound-label">GQA + SWA + headwise QK Norm</span>
+            <span class="compound-delta delta-worst">−26.5 pts</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="finding-card">
+        <div class="finding-number">03</div>
+        <h3>Llama 3's Strength Is Architectural</h3>
+        <p>
+          It was previously unclear whether Llama 3's long-context extensibility came from its architecture or its (undisclosed) training data.
+          OlmPool confirms: <strong>it's the architecture</strong>.
+        </p>
+        <p>
+          The Llama 3 architecture model is one of the best in the design space.
+          The same extension recipe applied to OLMo 3 and Qwen 3 architectures performs significantly worse,
+          even with identical data and training duration.
+        </p>
+      </div>
+
+      <div class="finding-card">
+        <div class="finding-number">04</div>
+        <h3>More Data Cannot Bridge the Gap</h3>
+        <p>
+          Three representative models (Llama 3 arch, OLMo 3 arch, worst arch) were extended with 1B, 10B, and 50B tokens.
+        </p>
+        <p>
+          Even after <strong>50B tokens</strong> of context extension, the worst architecture does not reach the performance
+          that the Llama 3 architecture achieves after just <strong>1B tokens</strong>.
+          The architectural gap is fundamental, not a matter of training budget.
+        </p>
+      </div>
+
+      <div class="finding-card">
+        <div class="finding-number">05</div>
+        <h3>Attention Sinks Are a Positive Signal</h3>
+        <p>
+          Models without QK norm develop strong <em>attention sinks</em> — early tokens that absorb excess attention weight.
+          While often considered a negative property, in OlmPool these sinks correlate with <strong>better</strong> long-context performance (R² = 0.38).
+        </p>
+        <p>
+          QK norm suppresses attention sinks and increases entropy, making it harder for the model to attend selectively over long contexts.
+        </p>
+      </div>
+
+      <div class="finding-card">
+        <div class="finding-number">06</div>
+        <h3>Detectable Early in Pretraining</h3>
+        <p>
+          Architectural differences in long-context behavior are detectable from context extension runs
+          as early as <strong>70B tokens</strong> into pretraining — well before full-scale training completes.
+        </p>
+        <p>
+          This opens a path to cheaper architectural validation: run a short context extension early in training
+          to screen for long-context viability before committing to full pretraining.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     THE 4 ARCHITECTURAL CHOICES
+═══════════════════════════════════════════ -->
+<section class="section section-alt" id="architecture">
+  <div class="container">
+    <h2 class="section-title">The 4 Architectural Choices</h2>
+    <p class="section-lead">
+      All four choices are used by at least one of OLMo, Llama, or Qwen model families.
+      Each has a legitimate engineering justification — but their combination is toxic for long-context extension.
+    </p>
+
+    <div class="arch-grid">
+
+      <div class="arch-card">
+        <div class="arch-header">
+          <span class="arch-num">1</span>
+          <div>
+            <h3 class="arch-title">QK Normalization</h3>
+            <span class="arch-used-by">Used by: OLMo 2/3 (layerwise), Qwen 3 / Gemma 3 (headwise)</span>
+          </div>
+        </div>
+        <p>
+          QK norm applies RMS normalization to query and key matrices before computing attention scores.
+          It improves <strong>training stability</strong> — but at a cost to long-context performance.
+        </p>
+        <ul class="arch-details">
+          <li><strong>Layerwise</strong> (OLMo 2/3): one γ per layer — used in OLMo 2 and OLMo 3</li>
+          <li><strong>Headwise</strong> (Qwen 3, Gemma 3): one γ per attention head — slightly worse than layerwise</li>
+          <li>Removing QK norm from OLMo 3 architecture: <span class="delta-good">+6 pts HELMET 32K</span></li>
+          <li>Adding QK norm to Llama 3 architecture: <span class="delta-bad">−3.8 pts HELMET 32K</span></li>
+        </ul>
+        <div class="arch-tradeoff">
+          <span class="tradeoff-pro">✓ Training stability</span>
+          <span class="tradeoff-con">✗ Long-context performance</span>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header">
+          <span class="arch-num">2</span>
+          <div>
+            <h3 class="arch-title">Grouped-Query Attention (GQA)</h3>
+            <span class="arch-used-by">Used by: Llama 3 (8 KV heads), Qwen 3, Gemma 3</span>
+          </div>
+        </div>
+        <p>
+          GQA reduces the KV cache size by sharing key-value matrices across multiple query heads.
+          The standard Llama 3 configuration uses <strong>8 KV heads for 32 query heads</strong>.
+        </p>
+        <ul class="arch-details">
+          <li>More KV heads = better long-context performance (monotonically)</li>
+          <li>32 KV heads (full MHA) outperforms 8 KV heads on HELMET and RULER</li>
+          <li>4 KV heads is worse than 8 KV heads</li>
+          <li>GQA alone: modest degradation; GQA + SWA: <span class="delta-bad">−9 pts avg</span></li>
+        </ul>
+        <div class="arch-tradeoff">
+          <span class="tradeoff-pro">✓ Inference efficiency, smaller KV cache</span>
+          <span class="tradeoff-con">✗ Reduced attention expressivity</span>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header">
+          <span class="arch-num">3</span>
+          <div>
+            <h3 class="arch-title">Sliding Window Attention (SWA)</h3>
+            <span class="arch-used-by">Used by: OLMo 3, Gemma 3</span>
+          </div>
+        </div>
+        <p>
+          SWA interspersed local-window layers with full-attention layers.
+          OlmPool uses the OLMo 3 configuration: <strong>3 local layers (4096 window) per 1 global layer</strong>.
+        </p>
+        <ul class="arch-details">
+          <li>SWA alone: <span class="delta-bad">−1.1 pts</span> (modest)</li>
+          <li>SWA + GQA: <span class="delta-bad">−9 pts average</span> (severe interaction)</li>
+          <li>SWA models show less attention sink behavior on full-attention layers</li>
+          <li>Restricts model to 4K context at 75% of layers during pretraining</li>
+        </ul>
+        <div class="arch-tradeoff">
+          <span class="tradeoff-pro">✓ Pretraining efficiency</span>
+          <span class="tradeoff-con">✗ Compounds badly with GQA</span>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header">
+          <span class="arch-num">4</span>
+          <div>
+            <h3 class="arch-title">Pretraining Context Length</h3>
+            <span class="arch-used-by">4K (Llama 2, OLMo 1) vs 8K (Llama 3, OLMo 3)</span>
+          </div>
+        </div>
+        <p>
+          The context length used during pretraining sets a ceiling on what the model can learn about long-range dependencies
+          before context extension begins.
+        </p>
+        <ul class="arch-details">
+          <li>4K vs 8K pretraining: <span class="delta-bad">−1 to −2 pts</span> on HELMET 32K</li>
+          <li>4K + SWA = model sees only 4K context at all layers during pretraining</li>
+          <li>Longer pretraining context enables better post-extension performance</li>
+        </ul>
+        <div class="arch-tradeoff">
+          <span class="tradeoff-pro">✓ Shorter = faster pretraining</span>
+          <span class="tradeoff-con">✗ Limits long-context ceiling</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Architecture Comparison Table -->
+    <div class="arch-compare">
+      <h3 class="arch-compare-title">Architecture Comparison: Llama 3 vs OLMo 3 vs Qwen 3</h3>
+      <p class="arch-compare-sub">How the three major model families differ on the four critical choices</p>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th class="col-llama">Llama 3</th>
+              <th class="col-olmo">OLMo 3</th>
+              <th class="col-qwen">Qwen 3</th>
+              <th>Impact on Long Context</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>QK Normalization</strong></td>
+              <td class="col-llama"><span class="cmp-good">None</span></td>
+              <td class="col-olmo"><span class="cmp-bad">Layerwise</span></td>
+              <td class="col-qwen"><span class="cmp-worst">Headwise</span></td>
+              <td>None = best · Headwise = worst<br><span class="cmp-note">Up to −6 pts HELMET 32K</span></td>
+            </tr>
+            <tr>
+              <td><strong>GQA (KV heads)</strong></td>
+              <td class="col-llama"><span class="cmp-mid">8 KV heads</span></td>
+              <td class="col-olmo"><span class="cmp-good">32 KV heads</span></td>
+              <td class="col-qwen"><span class="cmp-mid">8 KV heads</span></td>
+              <td>More heads = better<br><span class="cmp-note">32 &gt; 16 &gt; 8 &gt; 4</span></td>
+            </tr>
+            <tr>
+              <td><strong>Sliding Window Attn</strong></td>
+              <td class="col-llama"><span class="cmp-good">None</span></td>
+              <td class="col-olmo"><span class="cmp-bad">3/4 layers local</span></td>
+              <td class="col-qwen"><span class="cmp-good">None</span></td>
+              <td>SWA alone: −1.1 pts<br><span class="cmp-note">SWA + GQA: −9 pts avg</span></td>
+            </tr>
+            <tr>
+              <td><strong>Pretraining Context</strong></td>
+              <td class="col-llama"><span class="cmp-good">8K</span></td>
+              <td class="col-olmo"><span class="cmp-good">8K</span></td>
+              <td class="col-qwen"><span class="cmp-good">8K</span></td>
+              <td>8K &gt; 4K<br><span class="cmp-note">−1 to −2 pts for 4K</span></td>
+            </tr>
+            <tr class="compare-row-result">
+              <td><strong>OlmPool HELMET 32K</strong></td>
+              <td class="col-llama"><strong class="cmp-good">~52.4</strong><br><span class="cmp-note">Init G equiv.</span></td>
+              <td class="col-olmo"><strong class="cmp-bad">~47.5</strong><br><span class="cmp-note">Init H, SWA+LQK</span></td>
+              <td class="col-qwen"><strong class="cmp-worst">~38.8</strong><br><span class="cmp-note">SWA+LQK+8kv</span></td>
+              <td><span class="cmp-note">Same data, same extension recipe</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="arch-compare-note">* OlmPool holds data and training recipe constant — differences are purely architectural.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     MODEL TABLE
+═══════════════════════════════════════════ -->
+<section class="section" id="models">
+  <div class="container">
+    <h2 class="section-title">All 26 OlmPool Models</h2>
+    <p class="section-lead">
+      Complete results from Appendix A of the paper. Sorted by HELMET 32K score (worst to best).
+      All models are 7B parameters, pretrained on 140B tokens, then extended with 10B tokens to 64K context.
+    </p>
+
+    <div class="table-legend">
+      <span class="legend-item"><strong>SWA</strong> — Sliding Window Attention (3 local layers per 4)</span>
+      <span class="legend-item"><strong>QKNorm</strong> — ✓ layerwise · hw headwise · × none</span>
+      <span class="legend-item"><strong>Norm</strong> — post-sublayer-norm vs prenorm</span>
+      <span class="legend-item"><strong>Init</strong> — weight initialization code (A–K)</span>
+      <span class="legend-item"><strong>KV</strong> — KV heads (32 = full MHA)</span>
+      <span class="legend-item"><strong>Ctx</strong> — pretraining context length</span>
+    </div>
+
+    <div class="table-controls">
+      <label for="sort-select">Sort by:</label>
+      <select id="sort-select">
+        <option value="helmet32">HELMET 32K ↑</option>
+        <option value="ruler32">RULER 32K ↑</option>
+        <option value="longppl">LongPPL ↓</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table class="models-table" id="models-table">
+        <thead>
+          <tr>
+            <th>SWA</th>
+            <th>QKNorm</th>
+            <th>Norm</th>
+            <th>fp8</th>
+            <th>Init</th>
+            <th>KV</th>
+            <th>Ctx</th>
+            <th>Params</th>
+            <th class="col-score">H-8K</th>
+            <th class="col-score">H-16K</th>
+            <th class="col-score col-highlight">H-32K ↑</th>
+            <th class="col-score">H-64K</th>
+            <th class="col-score">LongPPL ↓</th>
+            <th class="col-score">R-32K ↑</th>
+            <th>HuggingFace</th>
+          </tr>
+        </thead>
+        <tbody id="models-tbody"></tbody>
+      </table>
+    </div>
+    <p class="table-source">Source: Table 1 &amp; Table 2, Appendix A, "Cracks in the Foundation" (Bertsch et al., 2026)</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     QUICK START
+═══════════════════════════════════════════ -->
+<section class="section section-alt" id="quickstart">
+  <div class="container">
+    <h2 class="section-title">Quick Start</h2>
+    <p class="section-lead">
+      OlmPool models are hosted on HuggingFace. Each model has <strong>38 checkpoints</strong> covering the full pretraining and context extension process.
+      You must specify a <code>revision</code> and set <code>trust_remote_code=True</code>.
+    </p>
+
+    <div class="qs-grid">
+      <div class="qs-block">
+        <h3>Load a Model</h3>
+        <pre class="code-block"><code><span class="c"># Install dependencies</span>
+pip install transformers torch
+
+<span class="c"># Load any OlmPool model</span>
+<span class="k">from</span> transformers <span class="k">import</span> AutoModelForCausalLM, AutoTokenizer
+
+model_name = <span class="s">"allenai/K_post_HQK_8kv_12k"</span>
+
+<span class="c"># revision = specific checkpoint (see HF Files tab)</span>
+tokenizer = AutoTokenizer.from_pretrained(
+    model_name,
+    revision=<span class="s">"&lt;checkpoint_revision&gt;"</span>,
+    trust_remote_code=<span class="k">True</span>
+)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    revision=<span class="s">"&lt;checkpoint_revision&gt;"</span>,
+    trust_remote_code=<span class="k">True</span>
+)</code></pre>
+      </div>
+
+      <div class="qs-block">
+        <h3>Choosing a Model</h3>
+        <div class="qs-tips">
+          <div class="qs-tip">
+            <span class="tip-icon">🏆</span>
+            <div>
+              <strong>Best long-context performance</strong><br>
+              Init J — prenorm, no QK norm, 16 KV heads, no SWA<br>
+              HELMET 32K: <strong>56.4</strong> · RULER 32K: <strong>67.7</strong>
+            </div>
+          </div>
+          <div class="qs-tip">
+            <span class="tip-icon">🦙</span>
+            <div>
+              <strong>Llama 3 architecture equivalent</strong><br>
+              prenorm, no QK norm, 8 KV heads, no SWA (Init G, 8K ctx)
+            </div>
+          </div>
+          <div class="qs-tip">
+            <span class="tip-icon">🔬</span>
+            <div>
+              <strong>Worst architecture (for research)</strong><br>
+              Init A — SWA + headwise QK norm + fp8 + 8 KV heads<br>
+              HELMET 32K: <strong>29.9</strong>
+            </div>
+          </div>
+          <div class="qs-tip">
+            <span class="tip-icon">📍</span>
+            <div>
+              <strong>38 checkpoints per model</strong><br>
+              Use <code>pre</code> models for pre-extension checkpoints,
+              <code>post</code> for the final extended model.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qs-links">
+      <a href="https://huggingface.co/collections/allenai/olmpool" target="_blank" rel="noopener" class="btn btn-primary">Browse All Models on HuggingFace ↗</a>
+      <a href="https://github.com/allenai/olmpool" target="_blank" rel="noopener" class="btn btn-secondary">GitHub Repository ↗</a>
+      <a href="https://allenai.org/papers/olmpool" target="_blank" rel="noopener" class="btn btn-secondary">Read the Paper ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     COMMUNITY & CITATION
+═══════════════════════════════════════════ -->
+<section class="section" id="community">
+  <div class="container">
+    <h2 class="section-title">Community &amp; Citation</h2>
+    <div class="community-grid">
+
+      <!-- Community Discussion -->
+      <div class="community-col">
+        <h3 class="community-col-title">Community Discussion</h3>
+
+        <a href="https://www.reddit.com/r/allenai/comments/1t06g0d/" target="_blank" rel="noopener" class="discussion-card">
+          <div class="disc-header">
+            <span class="disc-source disc-reddit">r/allenai</span>
+            <span class="disc-arrow">↗</span>
+          </div>
+          <p class="disc-title">"OlmPool: Cracks in the Foundation — 26 models showing how architecture kills long context"</p>
+          <p class="disc-meta">Reddit · r/allenai · Active discussion thread</p>
+          <div class="disc-topics">
+            <span class="disc-tag">Architecture tradeoffs</span>
+            <span class="disc-tag">QK norm debate</span>
+            <span class="disc-tag">Llama 3 analysis</span>
+          </div>
+        </a>
+
+        <a href="https://x.com/HuggingPapers/status/2049935216274260254" target="_blank" rel="noopener" class="discussion-card">
+          <div class="disc-header">
+            <span class="disc-source disc-twitter">𝕏 @HuggingPapers</span>
+            <span class="disc-arrow">↗</span>
+          </div>
+          <p class="disc-title">"Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension"</p>
+          <p class="disc-meta">X (Twitter) · @HuggingPapers · 20+ engagements</p>
+          <div class="disc-topics">
+            <span class="disc-tag">Trending paper</span>
+            <span class="disc-tag">LLM architecture</span>
+          </div>
+        </a>
+
+        <a href="https://www.threads.com/@allenai_official/post/DXxGjdymm9G" target="_blank" rel="noopener" class="discussion-card">
+          <div class="disc-header">
+            <span class="disc-source disc-threads">Threads @allenai_official</span>
+            <span class="disc-arrow">↗</span>
+          </div>
+          <p class="disc-title">Official announcement from Allen AI — OlmPool release and key findings</p>
+          <p class="disc-meta">Threads · @allenai_official · Official post</p>
+          <div class="disc-topics">
+            <span class="disc-tag">Official</span>
+            <span class="disc-tag">Allen AI</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Citation -->
+      <div class="community-col">
+        <h3 class="community-col-title">Cite This Work</h3>
+
+        <div class="citation-block">
+          <div class="citation-tabs">
+            <button class="cite-tab active" data-tab="bibtex">BibTeX</button>
+            <button class="cite-tab" data-tab="apa">APA</button>
+          </div>
+          <div class="cite-content" id="cite-bibtex">
+<pre class="cite-code">@article{bertsch2026olmpool,
+  title   = {Cracks in the Foundation: Seemingly
+             Minor Architectural Choices Impact
+             Long Context Extension},
+  author  = {Bertsch, Amanda and
+             Soldaini, Luca and
+             Gormley, Matthew R. and
+             Neubig, Graham and
+             Hajishirzi, Hannaneh and
+             Lo, Kyle and
+             Groeneveld, Dirk},
+  year    = {2026},
+  url     = {https://allenai.org/papers/olmpool},
+  institution = {Allen Institute for AI / CMU}
+}</pre>
+          </div>
+          <div class="cite-content hidden" id="cite-apa">
+<pre class="cite-code">Bertsch, A., Soldaini, L., Gormley, M. R.,
+Neubig, G., Hajishirzi, H., Lo, K., &amp;
+Groeneveld, D. (2026). Cracks in the
+Foundation: Seemingly Minor Architectural
+Choices Impact Long Context Extension.
+Allen Institute for AI.
+https://allenai.org/papers/olmpool</pre>
+          </div>
+          <button class="copy-btn" id="copy-cite">Copy</button>
+        </div>
+
+        <div class="authors-block">
+          <h4>Authors</h4>
+          <div class="authors-list">
+            <div class="author-item">
+              <span class="author-name">Amanda Bertsch</span>
+              <span class="author-aff">CMU · Now at Google DeepMind</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Luca Soldaini</span>
+              <span class="author-aff">Allen Institute for AI</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Matthew R. Gormley</span>
+              <span class="author-aff">CMU</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Graham Neubig</span>
+              <span class="author-aff">CMU · Now at Google DeepMind</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Hannaneh Hajishirzi</span>
+              <span class="author-aff">UW · Allen Institute for AI</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Kyle Lo</span>
+              <span class="author-aff">Allen Institute for AI</span>
+            </div>
+            <div class="author-item">
+              <span class="author-name">Dirk Groeneveld</span>
+              <span class="author-aff">Allen Institute for AI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FAQ
+═══════════════════════════════════════════ -->
+<section class="section" id="faq">
+  <div class="container">
+    <h2 class="section-title">FAQ</h2>
+    <div class="faq-list">
+
+      <details class="faq-item">
+        <summary>What is OlmPool?</summary>
+        <p>OlmPool is a suite of 26 comparable 7B language models released by Allen Institute for AI (Ai2) in April 2026. Each model is trained with identical data and optimization settings, varying only in four architectural choices: QK normalization, grouped-query attention (GQA), sliding window attention (SWA), and pretraining context length. The goal is to isolate how these choices affect long-context extensibility.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What are the four architectural choices studied?</summary>
+        <p>The four choices are: (1) <strong>QK Normalization</strong> — layerwise or headwise RMS norm applied to queries and keys; (2) <strong>Grouped-Query Attention (GQA)</strong> — sharing KV matrices across query heads to reduce cache size; (3) <strong>Sliding Window Attention (SWA)</strong> — using local-window attention in most layers; (4) <strong>Pretraining Context Length</strong> — 4K vs 8K tokens during pretraining.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Why does combining these choices hurt so much?</summary>
+        <p>Each choice individually reduces the expressivity of the attention mechanism. GQA reduces the number of independent attention patterns. SWA restricts the context window at most layers. QK norm suppresses attention sinks and increases entropy. When combined, these effects compound non-linearly — the worst configuration (GQA + SWA + headwise QK norm) drops HELMET 32K by 26.5 points.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Why can't I use training loss to predict long-context performance?</summary>
+        <p>Training loss correlates only weakly with long-context performance (R² = 0.29 for pretraining loss, R² = 0.06 for context extension loss). All 26 OlmPool models have very similar short-context metrics — the architectural differences only manifest after context extension. This is why the problem is so insidious: you can't see it coming from standard monitoring.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Is Llama 3 the best architecture for long context?</summary>
+        <p>Llama 3 is one of the best architectures in the OlmPool design space, but not the absolute best. The top-performing model (Init J: prenorm, no QK norm, 16 KV heads, no SWA) outperforms the Llama 3 architecture equivalent. OlmPool confirms that Llama 3's long-context strength is architectural (not data-driven), and identifies configurations that surpass it.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>How do I load OlmPool models?</summary>
+        <p>Use the HuggingFace <code>transformers</code> library with <code>trust_remote_code=True</code> and a specific <code>revision</code> parameter pointing to one of the 38 available checkpoints. See the Quick Start section above for a code example.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What is the "Init" letter in the model names?</summary>
+        <p>The Init letter (A–K) is a weight initialization code, not an architecture name. It identifies which initialization scheme was used for that run. Multiple models can share the same Init letter while differing in other architectural choices.</p>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-left">
+      <span class="logo">OlmPool<span class="logo-dot">.com</span></span>
+      <p>An independent reference site for the OlmPool research project by Allen Institute for AI.</p>
+      <p>Not affiliated with Allen AI. All model data sourced from the paper and HuggingFace.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Official Resources</h4>
+        <a href="https://allenai.org/papers/olmpool" target="_blank" rel="noopener">Paper (Allen AI)</a>
+        <a href="https://huggingface.co/collections/allenai/olmpool" target="_blank" rel="noopener">HuggingFace Collection</a>
+        <a href="https://github.com/allenai/olmpool" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://allenai.org/blog/olmpool" target="_blank" rel="noopener">Allen AI Blog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Benchmarks</h4>
+        <a href="https://princeton-nlp.github.io/HELMET/" target="_blank" rel="noopener">HELMET</a>
+        <a href="https://openreview.net/forum?id=293V3bJbmE" target="_blank" rel="noopener">HELMET Paper</a>
+        <a href="https://allenai.org" target="_blank" rel="noopener">Allen Institute for AI</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <p>Paper: "Cracks in the Foundation" · Bertsch, Soldaini, Gormley, Neubig, Hajishirzi, Lo, Groeneveld · Allen Institute for AI / CMU · 2026</p>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
+
+<script src="main.js"></script>
+</body>
+</html>

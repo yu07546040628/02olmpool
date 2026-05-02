@@ -1,0 +1,13 @@
+# 原始资料，不推送
+olmpool.pdf
+paper_extract.txt
+paper_full.txt
+pdf_pages_3_13.txt
+source.md
+olmpool-建站文档.md
+
+# 临时文件
+site/_body.html
+site/index_head_backup.html
+site/_head_backup.txt
+.claude/
