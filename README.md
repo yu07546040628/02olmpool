@@ -1,78 +1,51 @@
-# OlmPool — Project Website
+# OlmPool.com
 
-> **"Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension"**  
-> Allen Institute for AI · April 2026
-
-Live site → **[olmpool.com](https://olmpool.com)**  
-Paper → [allenai.org/papers/olmpool](https://allenai.org/papers/olmpool)  
-Models → [HuggingFace Collection](https://huggingface.co/collections/allenai/olmpool)
+**🌐 [olmpool.com](https://olmpool.com)** — Interactive research website for the OlmPool paper by Allen Institute for AI.
 
 ---
 
-## What is OlmPool?
+## About
 
-OlmPool is a controlled suite of **26 comparable 7B language models** trained with 170,000 H100 GPU hours to study how minor architectural choices affect long-context performance.
+OlmPool is a controlled study of how minor architectural choices silently break long-context performance in large language models.
 
-Key finding: combining just 3 seemingly minor architectural choices can drop long-context performance by **up to 47%** — and standard short-context benchmarks won't warn you.
+The researchers trained **26 comparable 7B models** using **170,000 H100 GPU hours**, varying just 4 architectural dimensions — and found that combining the wrong choices drops long-context performance by **up to 47%**, while standard benchmarks show nothing unusual.
 
-### The 4 architectural variables studied
+> *"Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension"*  
+> Bertsch, Soldaini, Gormley, Neubig, Hajishirzi, Lo, Groeneveld · Allen Institute for AI / CMU · April 2026
 
-| Variable | Option A | Option B |
+---
+
+## Explore
+
+| | |
+|---|---|
+| 🌐 **Website** | [olmpool.com](https://olmpool.com) |
+| 📄 **Paper** | [allenai.org/papers/olmpool](https://allenai.org/papers/olmpool) |
+| 🤗 **Models** | [HuggingFace Collection](https://huggingface.co/collections/allenai/olmpool) |
+
+---
+
+## Key Findings
+
+- **47% performance drop** from combining just 3 minor architectural choices
+- **Standard benchmarks are blind** to long-context degradation — you won't see it until you test at scale
+- **NoPE + sliding window attention** is the most dangerous combination
+- **Post-norm + QKV bias** compounds the problem further
+- All 26 models and 38 checkpoints each are publicly available for reproducibility
+
+---
+
+## The 4 Architectural Variables
+
+| Variable | Choice A | Choice B |
 |---|---|---|
-| **Positional Encoding** | RoPE | NoPE (no positional encoding) |
-| **Attention** | Full attention | Sliding window attention |
-| **Normalization** | Pre-norm | Post-norm |
-| **Bias** | No bias | QKV projection bias |
+| Positional Encoding | RoPE | NoPE |
+| Attention Pattern | Full attention | Sliding window |
+| Normalization | Pre-norm | Post-norm |
+| Projection Bias | No bias | QKV bias |
 
 ---
 
-## Website structure
+## Tech
 
-```
-index.html   — single-page site
-style.css    — all styles (CSS custom properties, responsive)
-main.js      — model table sort/filter, FAQ accordion, copy citation
-```
-
-Page sections in order:
-
-1. **Hero** — headline stats (26 models, 170K H100 hours, 47% drop)
-2. **Why It Matters** — motivation and problem statement
-3. **Video** — paper walkthrough
-4. **Key Findings** — 4 main results with visual cards
-5. **Architecture** — the 4 variables explained with comparison table
-6. **Models** — sortable/filterable table of all 26 models
-7. **Quick Start** — code snippets for loading models
-8. **Community & Citation** — BibTeX + APA citation, links
-9. **FAQ** — common questions
-
----
-
-## Deploy on Vercel
-
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import this repository (`yu07546040628/02olmpool`)
-3. Leave all settings as default — no framework, root directory is `/`
-4. Click **Deploy**
-
-Vercel will serve `index.html` from the root automatically.
-
----
-
-## Local preview
-
-```bash
-# Python
-python -m http.server 8080
-
-# Node
-npx serve .
-```
-
-Then open `http://localhost:8080`.
-
----
-
-## Credits
-
-Research by Amanda Bertsch, Luca Soldaini, Matthew Gormley, Graham Neubig, Hannaneh Hajishirzi, Kyle Lo, Dirk Groeneveld — Allen Institute for AI / Carnegie Mellon University.
+Static site — `index.html` + `style.css` + `main.js`. No framework, no build step.
