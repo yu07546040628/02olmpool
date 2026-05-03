@@ -1,0 +1,22 @@
+# OlmPool LLM Context
+
+OlmPool (https://www.olmpool.com) is an interactive research website for the OlmPool paper by Allen Institute for AI.
+
+## What is OlmPool?
+
+A controlled study of 26 comparable 7B LLMs trained with 170,000 H100 GPU hours, showing how minor architectural choices compound to reduce long-context performance by up to 47%.
+
+Paper: "Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension"
+Authors: Bertsch, Soldaini, Gormley, Neubig, Hajishirzi, Lo, Groeneveld · Allen Institute for AI / CMU · April 2026
+
+## Key Findings
+
+- 47% performance drop from combining just 3 minor architectural choices
+- Standard benchmarks are blind to long-context degradation
+- NoPE + sliding window attention is the most dangerous combination
+- Post-norm + QKV bias compounds the problem further
+
+## Resources
+
+- Paper: https://allenai.org/papers/olmpool
+- Models: https://huggingface.co/collections/allenai/olmpool
